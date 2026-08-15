@@ -510,6 +510,58 @@ input[type="number"] {
     display: block;
 }
 
+/* Custom Switch Toggle */
+.custom-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.85rem;
+    color: var(--text-gray);
+    font-weight: 500;
+}
+
+.custom-switch input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.switch-mark {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+    background-color: #CBD5E1;
+    border-radius: 20px;
+    margin-right: 8px;
+    transition: var(--transition);
+}
+
+.switch-mark::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background-color: white;
+    border-radius: 50%;
+    transition: var(--transition);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.custom-switch input:checked ~ .switch-mark {
+    background-color: var(--primary);
+}
+
+.custom-switch input:checked ~ .switch-mark::after {
+    transform: translateX(16px);
+}
+
 /* Custom Select */
 .custom-select-wrapper {
     position: relative;

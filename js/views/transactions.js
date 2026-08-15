@@ -363,6 +363,16 @@ window.viewTransactionDetail = (id) => {
         btnMarkPaid.style.display = '';
     }
 
+    const labelToggle = document.getElementById('label-toggle-price');
+    const toggleCb = document.getElementById('toggle-price-details');
+    if (trx.type === 'KILOAN_SATUAN') {
+        labelToggle.classList.remove('hidden');
+    } else {
+        labelToggle.classList.add('hidden');
+        toggleCb.checked = false;
+    }
+    const hideMixedPrice = trx.type === 'KILOAN_SATUAN' && !toggleCb.checked;
+
     const container = document.getElementById('detail-invoice-content');
     
     let html = `
@@ -400,7 +410,7 @@ window.viewTransactionDetail = (id) => {
             <div class="mb-4">
                 <div class="text-xs text-gray font-bold uppercase mb-2">Layanan Kiloan</div>
                 <div class="receipt-item-row font-medium">
-                    ${trx.type === 'KILOAN_SATUAN' ? `
+                    ${hideMixedPrice ? `
                         <span>Berat Kiloan</span>
                         <span>${trx.kiloDetail.weight} Kg</span>
                     ` : `
@@ -427,7 +437,7 @@ window.viewTransactionDetail = (id) => {
                 <div class="text-xs text-gray font-bold uppercase mb-2">Layanan Satuan</div>
         `;
         trx.unitDetail.items.forEach(i => {
-            if (trx.type === 'KILOAN_SATUAN') {
+            if (hideMixedPrice) {
                 html += `
                     <div class="receipt-item-row">
                         <span>${i.name} &times; ${i.qty}</span>
@@ -484,6 +494,10 @@ document.getElementById('btn-delete-trx').addEventListener('click', () => {
         showToast('Transaksi berhasil dihapus');
         navigateTo('transaction-list');
     });
+});
+
+document.getElementById('toggle-price-details').addEventListener('change', () => {
+    if(currentViewedTrxId) viewTransactionDetail(currentViewedTrxId);
 });
 
 document.getElementById('btn-mark-paid').addEventListener('click', () => {
@@ -543,7 +557,7 @@ document.getElementById('btn-print-trx').addEventListener('click', () => {
             copyHtml += `
                 <div style="font-weight:bold;">KILOAN</div>
                 <div class="print-row">
-                    ${trx.type === 'KILOAN_SATUAN' ? `
+                    ${hideMixedPrice ? `
                         <span>Berat Kiloan</span>
                         <span>${trx.kiloDetail.weight} Kg</span>
                     ` : `
@@ -567,7 +581,7 @@ document.getElementById('btn-print-trx').addEventListener('click', () => {
             copyHtml += `<div style="font-weight:bold;">SATUAN</div>`;
             copyHtml += `<table class="print-items">`;
             trx.unitDetail.items.forEach(i => {
-                if (trx.type === 'KILOAN_SATUAN') {
+                if (hideMixedPrice) {
                     copyHtml += `
                         <tr>
                             <td>- ${i.name}</td>
