@@ -525,6 +525,9 @@ document.getElementById('btn-print-trx').addEventListener('click', () => {
     if(!currentViewedTrxId) return;
     const trx = db.transactions.find(t => t.id === currentViewedTrxId);
     
+    const toggleCb = document.getElementById('toggle-price-details');
+    const hideMixedPrice = trx.type === 'KILOAN_SATUAN' && (!toggleCb || !toggleCb.checked);
+    
     const container = document.getElementById('print-container');
     
     // Generate 3 copies
