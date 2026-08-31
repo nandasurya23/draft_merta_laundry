@@ -32,7 +32,7 @@ export async function PUT(req: NextRequest) {
     const validation = UpdateSettingsSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || 'Invalid input' },
+        { error: validation.error.issues[0]?.message || 'Invalid input' },
         { status: 400 }
       );
     }

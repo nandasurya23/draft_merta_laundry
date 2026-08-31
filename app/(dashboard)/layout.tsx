@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X, LogOut, Home, FileText, Users, BarChart3, Settings } from 'lucide-react';
@@ -15,7 +15,6 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  // Fetch current user on mount
   React.useEffect(() => {
     fetchCurrentUser();
   }, []);
@@ -51,13 +50,11 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
       <div
         className={`${
           sidebarOpen ? 'w-64' : 'w-20'
         } bg-indigo-900 text-white transition-all duration-300 flex flex-col`}
       >
-        {/* Sidebar Header */}
         <div className="flex items-center justify-between p-4 border-b border-indigo-800">
           {sidebarOpen && <h2 className="text-xl font-bold">Merta</h2>}
           <button
@@ -68,7 +65,6 @@ export default function DashboardLayout({
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
@@ -90,7 +86,6 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        {/* Logout */}
         <div className="p-4 border-t border-indigo-800">
           <button
             onClick={handleLogout}
@@ -102,9 +97,7 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Topbar */}
         <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Merta Laundry</h1>
           <div className="flex items-center gap-4">
@@ -117,7 +110,6 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="flex-1 overflow-auto p-6">
           {children}
         </main>

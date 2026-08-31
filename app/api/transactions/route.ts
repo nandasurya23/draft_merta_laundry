@@ -48,12 +48,10 @@ export async function GET(req: NextRequest) {
       paramIndex++;
     }
 
-    const countResult = await query(`SELECT COUNT(*) as count FROM (SELECT 1 FROM transactions WHERE 1=1 ${
-      search ? `AND (invoice_number ILIKE $1 OR customer_name ILIKE $1)` : ''
-    }${paymentStatus ? ` AND payment_status = $${search ? 2 : 1}` : ''}${
-      laundryStatus ? ` AND laundry_status = $${search && paymentStatus ? 3 : paymentStatus ? 2 : 1}` : ''
-    }) t`, params.length > 0 ? params.slice(0, 1) : []);
-    
+    const countResult = await query(
+      `SELECT COUNT(*) as count FROM transactions WHERE 1=1`,
+      []
+    );
     const total = parseInt(countResult.rows[0].count);
 
     sql += ` ORDER BY date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
@@ -61,7 +59,7 @@ export async function GET(req: NextRequest) {
 
     const result = await query(sql, params);
 
-    const transactions = result.rows.map(t => ({
+    const transactions = result.rows.map((t: any) => ({
       ...t,
       kilo_detail: t.kilo_detail ? JSON.parse(t.kilo_detail) : null,
       unit_detail: t.unit_detail ? JSON.parse(t.unit_detail) : null,
@@ -85,7 +83,7 @@ export async function POST(req: NextRequest) {
     const validation = CreateTransactionSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || 'Invalid input' },
+        { error: validation.error.issues[0]?.message || 'Invalid input' },
         { status: 400 }
       );
     }
@@ -108,13 +106,17 @@ export async function POST(req: NextRequest) {
     let totalItem = 0;
 
     if (kiloDetail) {
-      grandTotal += kiloDetail.subtotal || kiloDetail.weight * kiloDetail.pricePerKg;
+      const subtotal = kiloDetail.weight * kiloDetail.pricePerKg;
+      grandTotal += subtotal;
       totalItem += kiloDetail.totalItemCount || 0;
     }
 
     if (unitDetail) {
-      grandTotal += unitDetail.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-      totalItem += unitDetail.items.reduce((sum, item) => sum + item.qty, 0);
+      grandTotal += unitDetail.items.reduce((sum: number, item: any) => {
+        const itemSubtotal = item.qty * item.unitPrice;
+        return sum + itemSubtotal;
+      }, 0);
+      totalItem += unitDetail.items.reduce((sum: number, item: any) => sum + item.qty, 0);
     }
 
     const result = await query(
@@ -144,7 +146,6 @@ export async function POST(req: NextRequest) {
 
     const transaction = result.rows[0];
 
-    // Update customer stats if customer exists
     if (customerId) {
       await query(
         `UPDATE customers SET 

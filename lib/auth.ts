@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT, jwtVerify, JWTPayload } from 'jose';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
@@ -9,10 +9,9 @@ const key = new TextEncoder().encode(
   process.env.SESSION_SECRET || 'default-dev-secret-change-in-production'
 );
 
-export interface SessionPayload {
+export interface SessionPayload extends JWTPayload {
   userId: string;
   userName: string;
-  iat?: number;
 }
 
 export async function hashPin(pin: string): Promise<string> {
@@ -35,7 +34,7 @@ export async function signSession(payload: SessionPayload): Promise<string> {
 export async function verifySession(token: string): Promise<SessionPayload | null> {
   try {
     const verified = await jwtVerify(token, key);
-    return verified.payload as SessionPayload;
+    return verified.payload as unknown as SessionPayload;
   } catch {
     return null;
   }

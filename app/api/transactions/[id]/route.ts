@@ -4,10 +4,11 @@ import { UpdateTransactionSchema } from '@/lib/validation';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const result = await query('SELECT * FROM transactions WHERE id = $1', [params.id]);
+    const { id } = await params;
+    const result = await query('SELECT * FROM transactions WHERE id = $1', [id]);
 
     if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
@@ -30,14 +31,15 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await req.json();
     const validation = UpdateTransactionSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || 'Invalid input' },
+        { error: validation.error.issues[0]?.message || 'Invalid input' },
         { status: 400 }
       );
     }
@@ -57,7 +59,7 @@ export async function PATCH(
       values.push(laundryStatus);
     }
 
-    values.push(params.id);
+    values.push(id);
 
     const result = await query(
       `UPDATE transactions SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
@@ -85,11 +87,12 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const txnResult = await query('SELECT customer_id, grand_total FROM transactions WHERE id = $1', [
-      params.id,
+      id,
     ]);
 
     if (txnResult.rows.length === 0) {
@@ -98,7 +101,7 @@ export async function DELETE(
 
     const { customer_id, grand_total } = txnResult.rows[0];
 
-    await query('DELETE FROM transactions WHERE id = $1', [params.id]);
+    await query('DELETE FROM transactions WHERE id = $1', [id]);
 
     if (customer_id) {
       await query(

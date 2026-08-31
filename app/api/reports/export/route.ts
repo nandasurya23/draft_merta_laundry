@@ -56,7 +56,6 @@ export async function GET(req: NextRequest) {
 
     const transactions = result.rows;
 
-    // Build CSV
     const headers = [
       'No Nota',
       'Tanggal',
@@ -68,7 +67,7 @@ export async function GET(req: NextRequest) {
       'Status Laundry',
     ];
 
-    const rows = transactions.map((t) => [
+    const rows = transactions.map((t: any) => [
       escapeCSV(t.invoice_number),
       escapeCSV(new Date(t.date).toLocaleDateString('id-ID')),
       escapeCSV(t.customer_name),
@@ -81,7 +80,7 @@ export async function GET(req: NextRequest) {
 
     const csv = [
       headers.join(','),
-      ...rows.map((row) => row.join(',')),
+      ...rows.map((row: string[]) => row.join(',')),
     ].join('\n');
 
     const timestamp = new Date().toISOString().split('T')[0];

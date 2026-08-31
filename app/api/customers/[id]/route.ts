@@ -4,14 +4,15 @@ import { UpdateCustomerSchema } from '@/lib/validation';
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await req.json();
     const validation = UpdateCustomerSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || 'Invalid input' },
+        { error: validation.error.issues[0]?.message || 'Invalid input' },
         { status: 400 }
       );
     }
@@ -43,7 +44,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
 
-    values.push(params.id);
+    values.push(id);
 
     const result = await query(
       `UPDATE customers SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
@@ -70,11 +71,12 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const result = await query('DELETE FROM customers WHERE id = $1 RETURNING id', [
-      params.id,
+      id,
     ]);
 
     if (result.rows.length === 0) {

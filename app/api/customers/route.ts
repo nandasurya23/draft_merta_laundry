@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { CreateCustomerSchema, UpdateCustomerSchema } from '@/lib/validation';
+import { CreateCustomerSchema } from '@/lib/validation';
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,14 +16,12 @@ export async function GET(req: NextRequest) {
       params.push(`%${search}%`);
     }
 
-    // Get total count
     const countResult = await query(
       `SELECT COUNT(*) as count FROM customers ${search ? 'WHERE name ILIKE $1 OR phone ILIKE $1' : ''}`,
       search ? [`%${search}%`] : []
     );
     const total = parseInt(countResult.rows[0].count);
 
-    // Get paginated results
     sql += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     params.push(limit, offset);
 
@@ -52,7 +50,7 @@ export async function POST(req: NextRequest) {
     const validation = CreateCustomerSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || 'Invalid input' },
+        { error: validation.error.issues[0]?.message || 'Invalid input' },
         { status: 400 }
       );
     }
