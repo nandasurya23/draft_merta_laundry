@@ -1,10 +1,18 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-require('dotenv').config({ path: '.env.local' });
+const fs = require('fs');
+const envPath = process.env.DOTENV_CONFIG_PATH || (fs.existsSync('.env.local') ? '.env.local' : '.env.production');
+require('dotenv').config({ path: envPath });
+
+const isNeon =
+  process.env.DATABASE_URL?.includes('neon.tech') ||
+  process.env.DATABASE_URL?.includes('sslmode=require') ||
+  process.env.NODE_ENV === 'production';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: isNeon ? { rejectUnauthorized: false } : undefined,
 });
 
 async function hashPin(pin) {

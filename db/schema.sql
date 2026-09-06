@@ -12,6 +12,7 @@ CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(100) NOT NULL,
   pin_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(20) NOT NULL DEFAULT 'KARYAWAN',
   failed_attempts INTEGER DEFAULT 0,
   locked_until TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

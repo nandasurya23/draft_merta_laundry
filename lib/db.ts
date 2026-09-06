@@ -10,12 +10,18 @@ export function getPool(): Pool {
       throw new Error('DATABASE_URL environment variable is not set');
     }
 
+    const isNeon =
+      connectionString.includes('neon.tech') ||
+      connectionString.includes('sslmode=require');
+    const isProduction = process.env.NODE_ENV === 'production';
+
     pool = new Pool({
       connectionString,
-      max: 20,
-      min: 1,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
+      max: isProduction ? 10 : 20,
+      min: 0,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 5000,
+      ssl: isProduction || isNeon ? { rejectUnauthorized: false } : undefined,
     });
 
     pool.on('error', (err: Error) => {
