@@ -17,6 +17,8 @@ import {
   AlertCircle,
   RotateCcw,
 } from 'lucide-react';
+import { SkeletonDetailPage } from '@/components/ui/Skeleton';
+import { ButtonSpinner } from '@/components/ui/Spinner';
 
 interface Transaction {
   id: string;
@@ -248,11 +250,7 @@ export default function TransactionDetailPage() {
   }
 
   if (loading) {
-    return (
-      <div className="py-20 text-center text-slate-400 text-sm">
-        Memuat detail transaksi...
-      </div>
-    );
+    return <SkeletonDetailPage />;
   }
 
   if (!txn) {
@@ -372,7 +370,11 @@ export default function TransactionDetailPage() {
               className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 disabled:opacity-50 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2.5 shrink-0"
             >
               <CheckCircle2 size={22} />
-              <span>{updating ? 'Menyimpan...' : 'Terima Uang & Tandai Lunas'}</span>
+              {updating ? (
+                <ButtonSpinner label="Menyimpan..." />
+              ) : (
+                <span>Terima Uang &amp; Tandai Lunas</span>
+              )}
             </button>
           </div>
         ) : (
