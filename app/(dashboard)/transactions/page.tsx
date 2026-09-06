@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, ChevronRight, ChevronLeft, Clock, CheckCircle2, Receipt, X } from 'lucide-react';
+import { SkeletonTableRow } from '@/components/ui/Skeleton';
 
 interface Transaction {
   id: string;
@@ -159,8 +160,10 @@ export default function TransactionsPage() {
       {/* Transactions List */}
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
         {loading ? (
-          <div className="py-16 text-center text-slate-400 text-sm">
-            Memuat daftar transaksi...
+          <div className="divide-y divide-slate-100">
+            {[...Array(ITEMS_PER_PAGE)].map((_, i) => (
+              <SkeletonTableRow key={i} />
+            ))}
           </div>
         ) : transactions.length === 0 ? (
           <div className="py-16 px-4 text-center">

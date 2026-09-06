@@ -15,6 +15,7 @@ import {
   Search,
   X,
 } from 'lucide-react';
+import { SkeletonCustomerCard } from '@/components/ui/Skeleton';
 
 interface CustomItem {
   name: string;
@@ -371,8 +372,10 @@ export default function CustomersPage() {
       {/* Customer List */}
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
         {loading ? (
-          <div className="py-16 text-center text-slate-400 text-sm">
-            Memuat data pelanggan...
+          <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <SkeletonCustomerCard key={i} />
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 px-4 text-center">

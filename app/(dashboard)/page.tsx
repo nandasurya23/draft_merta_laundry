@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Receipt, CheckCircle2, Clock, ArrowRight, Wallet } from 'lucide-react';
 import { useUser } from './UserContext';
+import { SkeletonDashboardStats, SkeletonRecentTransactions } from '@/components/ui/Skeleton';
 
 interface Stats {
   totalTransactions: number;
@@ -130,11 +131,7 @@ export default function DashboardPage() {
 
       {/* Stats Cards Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl p-6 h-36 animate-pulse border border-slate-200/80"></div>
-          ))}
-        </div>
+        <SkeletonDashboardStats />
       ) : stats ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Card 1: Sudah Lunas (Uang Masuk) */}
@@ -205,7 +202,9 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {transactions.length === 0 ? (
+        {loading ? (
+          <SkeletonRecentTransactions />
+        ) : transactions.length === 0 ? (
           <div className="py-12 text-center">
             <Receipt className="mx-auto text-slate-300 mb-2" size={40} />
             <p className="text-slate-600 font-bold text-sm">Belum ada transaksi</p>

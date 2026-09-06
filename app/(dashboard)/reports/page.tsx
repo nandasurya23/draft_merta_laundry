@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Download, CheckCircle2, Clock, Receipt, TrendingUp, Calendar } from 'lucide-react';
 import { useUser } from '../UserContext';
+import { SkeletonCard } from '@/components/ui/Skeleton';
+import { ButtonSpinner } from '@/components/ui/Spinner';
 
 interface Stats {
   totalTransactions: number;
@@ -72,8 +74,12 @@ export default function ReportsPage() {
 
   if (checkingRole) {
     return (
-      <div className="py-20 text-center text-slate-400 text-sm">
-        Memeriksa hak akses laporan...
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -94,7 +100,7 @@ export default function ReportsPage() {
           className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition-all self-start sm:self-auto"
         >
           <Download size={18} />
-          <span>{exporting ? 'Mengekspor Data...' : 'Download File Excel / CSV'}</span>
+          <span>{exporting ? <ButtonSpinner label="Mengekspor..." /> : 'Download File Excel / CSV'}</span>
         </button>
       </div>
 
@@ -135,7 +141,7 @@ export default function ReportsPage() {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-3xl p-6 h-36 animate-pulse border border-slate-200/80"></div>
+            <SkeletonCard key={i} />
           ))}
         </div>
       ) : stats ? (

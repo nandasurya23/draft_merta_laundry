@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '../UserContext';
+import { SkeletonSettingsPage } from '@/components/ui/Skeleton';
+import { ButtonSpinner } from '@/components/ui/Spinner';
 
 interface PriceItem {
   id?: string;
@@ -319,11 +321,7 @@ export default function SettingsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="py-20 text-center text-slate-400 text-sm">
-        Memuat pengaturan laundry...
-      </div>
-    );
+    return <SkeletonSettingsPage />;
   }
 
   return (
@@ -655,7 +653,11 @@ export default function SettingsPage() {
             className="w-full py-4 px-6 rounded-2xl font-extrabold text-base bg-indigo-600 hover:bg-indigo-700 active:scale-95 disabled:opacity-60 text-white shadow-xl shadow-indigo-600/30 transition-all flex items-center justify-center gap-2"
           >
             <Save size={18} />
-            <span>{saving ? 'Menyimpan Pengaturan...' : 'Simpan Semua Pengaturan'}</span>
+            {saving ? (
+              <ButtonSpinner label="Menyimpan..." />
+            ) : (
+              <span>Simpan Semua Pengaturan</span>
+            )}
           </button>
         </div>
       </form>
