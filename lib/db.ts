@@ -1,9 +1,11 @@
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 
-let pool: Pool | null = null;
+declare global {
+  var __mertaPostgresPool: Pool | undefined;
+}
 
 export function getPool(): Pool {
-  if (!pool) {
+  if (!globalThis.__mertaPostgresPool) {
     const connectionString = process.env.DATABASE_URL;
 
     if (!connectionString) {
@@ -15,7 +17,7 @@ export function getPool(): Pool {
       connectionString.includes('sslmode=require');
     const isProduction = process.env.NODE_ENV === 'production';
 
-    pool = new Pool({
+    const newPool = new Pool({
       connectionString,
       max: isProduction ? 10 : 20,
       min: 0,
@@ -24,25 +26,21 @@ export function getPool(): Pool {
       ssl: isProduction || isNeon ? { rejectUnauthorized: false } : undefined,
     });
 
-    pool.on('error', (err: Error) => {
+    newPool.on('error', (err: Error) => {
       console.error('Unexpected error on idle client', err);
     });
+
+    globalThis.__mertaPostgresPool = newPool;
   }
 
-  return pool;
+  return globalThis.__mertaPostgresPool;
 }
 
 export async function query<R extends QueryResultRow = QueryResultRow>(
   text: string,
   params?: unknown[]
 ): Promise<QueryResult<R>> {
-  const client = await getPool().connect();
-  try {
-    const result = await client.query<R>(text, params);
-    return result;
-  } finally {
-    client.release();
-  }
+  return getPool().query<R>(text, params);
 }
 
 export async function getClient(): Promise<PoolClient> {

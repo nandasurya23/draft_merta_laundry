@@ -13,7 +13,14 @@ export async function GET() {
 
     const settings = result.rows[0];
 
-    return NextResponse.json({ data: settings });
+    return NextResponse.json(
+      { data: settings },
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=60, stale-while-revalidate=300',
+        },
+      }
+    );
   } catch (error) {
     console.error('Get settings error:', error);
     return NextResponse.json({ error: 'Terjadi kesalahan' }, { status: 500 });

@@ -16,16 +16,17 @@ export async function GET(req: NextRequest) {
       params.push(`%${search}%`);
     }
 
-    const countResult = await query(
-      `SELECT COUNT(*) as count FROM customers ${search ? 'WHERE name ILIKE $1 OR phone ILIKE $1' : ''}`,
-      search ? [`%${search}%`] : []
-    );
+    const countSql = `SELECT COUNT(*) as count FROM customers ${search ? 'WHERE name ILIKE $1 OR phone ILIKE $1' : ''}`;
+    const countParams = search ? [`%${search}%`] : [];
+
+    const dataSql = `${sql} ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    const dataParams = [...params, limit, offset];
+
+    const [countResult, result] = await Promise.all([
+      query(countSql, countParams),
+      query(dataSql, dataParams),
+    ]);
     const total = parseInt(countResult.rows[0].count);
-
-    sql += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    params.push(limit, offset);
-
-    const result = await query(sql, params);
 
     return NextResponse.json(
       {

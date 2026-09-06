@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Receipt, CheckCircle2, Clock, ArrowRight, Wallet } from 'lucide-react';
+import { useUser } from './UserContext';
 
 interface Stats {
   totalTransactions: number;
@@ -25,22 +26,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<{ id: string; name: string; role: 'OWNER' | 'KARYAWAN' } | null>(null);
-
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-        }
-      } catch (err) {
-        console.error('Failed to fetch user:', err);
-      }
-    }
-    fetchUser();
-  }, []);
+  const { user } = useUser();
 
   useEffect(() => {
     let ignore = false;

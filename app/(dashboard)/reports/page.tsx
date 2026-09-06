@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Download, CheckCircle2, Clock, Receipt, TrendingUp, Calendar } from 'lucide-react';
+import { useUser } from '../UserContext';
 
 interface Stats {
   totalTransactions: number;
@@ -13,31 +14,19 @@ interface Stats {
 
 export default function ReportsPage() {
   const router = useRouter();
+  const { user, loading: checkingRole } = useUser();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [checkingRole, setCheckingRole] = useState(true);
   const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'all'>('today');
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    async function checkRole() {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.user?.role !== 'OWNER') {
-            router.replace('/');
-            return;
-          }
-        }
-      } catch (err) {
-        console.error('Role check failed:', err);
-      } finally {
-        setCheckingRole(false);
+    if (!checkingRole) {
+      if (!user || user.role !== 'OWNER') {
+        router.replace('/');
       }
     }
-    checkRole();
-  }, [router]);
+  }, [checkingRole, user, router]);
 
   useEffect(() => {
     let ignore = false;
