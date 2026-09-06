@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate": "psql -d merta_laundry -f db/migrate.sql",
+    "db:migrate": "node db/migrate.js",
     "db:reset": "psql -d merta_laundry -f db/schema.sql",
     "db:seed": "node db/seed.js"
   },

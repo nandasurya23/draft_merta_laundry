@@ -12,6 +12,7 @@ CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(100) NOT NULL,
   pin_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(20) NOT NULL DEFAULT 'KARYAWAN',
   failed_attempts INTEGER DEFAULT 0,
   locked_until TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -47,6 +48,10 @@ CREATE TABLE settings (
 );
 
 CREATE INDEX idx_settings_id ON settings(id);
+
+INSERT INTO settings (id, laundry_name, address, phone, kiloan_prices, satuan_prices)
+VALUES (1, 'Merta Laundry', '', '', '[]'::jsonb, '[]'::jsonb)
+ON CONFLICT (id) DO NOTHING;
 
 -- Transactions table (laundry notes/invoices)
 CREATE TABLE transactions (
