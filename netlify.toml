@@ -1,26 +1,13 @@
 [build]
   command = "npm run build"
-  functions = "netlify/functions"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
+  NODE_ENV = "production"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[dev]
-  command = "npm run dev"
-  port = 3000
-  targetPort = 3000
-  autoLaunch = true
-
-[context.production]
-  environment = { NODE_ENV = "production" }
-
 [context.production.environment]
   NODE_ENV = "production"
-
-# Environment variables must be set in Netlify dashboard:
-# DATABASE_URL = PostgreSQL connection string (from Neon)
-# SESSION_SECRET = JWT signing secret
