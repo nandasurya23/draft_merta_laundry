@@ -38,6 +38,10 @@ CREATE TABLE IF NOT EXISTS settings (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+INSERT INTO settings (id, laundry_name, address, phone, kiloan_prices, satuan_prices)
+VALUES (1, 'Merta Laundry', '', '', '[]'::jsonb, '[]'::jsonb)
+ON CONFLICT (id) DO NOTHING;
+
 -- 4. Transactions table
 CREATE TABLE IF NOT EXISTS transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
