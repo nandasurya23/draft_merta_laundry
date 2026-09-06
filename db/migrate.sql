@@ -70,7 +70,9 @@ CREATE TABLE IF NOT EXISTS transactions (
 
 CREATE INDEX IF NOT EXISTS idx_transactions_invoice ON transactions(invoice_number);
 CREATE INDEX IF NOT EXISTS idx_transactions_customer_id ON transactions(customer_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_customer_name ON transactions(customer_name);
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_payment_status ON transactions(payment_status);
 CREATE INDEX IF NOT EXISTS idx_transactions_laundry_status ON transactions(laundry_status);
 CREATE INDEX IF NOT EXISTS idx_transactions_created_by ON transactions(created_by_user_id);
+CREATE INDEX IF NOT EXISTS idx_customers_created_at ON customers(created_at DESC);

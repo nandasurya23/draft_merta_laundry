@@ -82,10 +82,12 @@ CREATE TABLE transactions (
 CREATE INDEX idx_transactions_id ON transactions(id);
 CREATE INDEX idx_transactions_invoice ON transactions(invoice_number);
 CREATE INDEX idx_transactions_customer_id ON transactions(customer_id);
+CREATE INDEX idx_transactions_customer_name ON transactions(customer_name);
 CREATE INDEX idx_transactions_date ON transactions(date);
 CREATE INDEX idx_transactions_payment_status ON transactions(payment_status);
 CREATE INDEX idx_transactions_laundry_status ON transactions(laundry_status);
 CREATE INDEX idx_transactions_created_by ON transactions(created_by_user_id);
+CREATE INDEX idx_customers_created_at ON customers(created_at DESC);
 
 -- Grant permissions (if needed for production)
 -- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO merta_app;

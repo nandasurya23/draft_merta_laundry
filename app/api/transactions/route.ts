@@ -53,16 +53,17 @@ export async function GET(req: NextRequest) {
       paramIndex++;
     }
 
-    const countResult = await query(
+    const countPromise = query(
       `SELECT COUNT(*) as count FROM transactions${whereSql}`,
       [...params]
     );
-    const total = parseInt(countResult.rows[0].count);
 
     const queryParams = [...params, limit, offset];
     const sql = `SELECT * FROM transactions${whereSql} ORDER BY date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    const dataPromise = query(sql, queryParams);
 
-    const result = await query(sql, queryParams);
+    const [countResult, result] = await Promise.all([countPromise, dataPromise]);
+    const total = parseInt(countResult.rows[0].count);
 
     return NextResponse.json({ data: result.rows, total });
   } catch (error) {

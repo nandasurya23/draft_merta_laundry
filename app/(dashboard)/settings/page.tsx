@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Plus,
   Trash2,
@@ -20,6 +20,7 @@ import {
   KeyRound,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '../UserContext';
 
 interface PriceItem {
   id?: string;
@@ -35,6 +36,10 @@ interface EmployeeUser {
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { user: currentUser, refreshUser } = useUser();
+  const currentUserId = currentUser?.id || null;
+  const currentUserRole = currentUser?.role || null;
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -58,8 +63,6 @@ export default function SettingsPage() {
   // Karyawan & Kasir State
   const [users, setUsers] = useState<EmployeeUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [currentUserRole, setCurrentUserRole] = useState<'OWNER' | 'KARYAWAN' | null>(null);
 
   // Add User State
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -83,55 +86,63 @@ export default function SettingsPage() {
   });
   const [deleteUserLoading, setDeleteUserLoading] = useState(false);
 
-  useEffect(() => {
-    async function fetchSettings() {
-      try {
-        const res = await fetch('/api/settings');
-        if (res.ok) {
-          const data = await res.json();
-          setFormData({
-            laundryName: data.data.laundry_name || '',
-            address: data.data.address || '',
-            phone: data.data.phone || '',
-          });
-          setKiloanServices(data.data.kiloan_prices || []);
-          setSatuanServices(data.data.satuan_prices || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch settings:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchSettings();
-    fetchUsers();
-  }, []);
-
-  async function fetchUsers() {
-    setLoadingUsers(true);
+  const fetchUsers = useCallback(async () => {
     try {
-      const meRes = await fetch('/api/auth/me');
-      if (meRes.ok) {
-        const meData = await meRes.json();
-        const role = meData.user?.role || null;
-        setCurrentUserId(meData.user?.id || null);
-        setCurrentUserRole(role);
-
-        if (role === 'OWNER') {
-          const usersRes = await fetch('/api/users');
-          if (usersRes.ok) {
-            const data = await usersRes.json();
-            setUsers(data.data || []);
-          }
-        }
+      const usersRes = await fetch('/api/users');
+      if (usersRes.ok) {
+        const data = await usersRes.json();
+        setUsers(data.data || []);
       }
     } catch (err) {
       console.error('Failed to fetch users:', err);
     } finally {
       setLoadingUsers(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadInitialData() {
+      try {
+        const settingsPromise = fetch('/api/settings');
+        const usersPromise = currentUserRole === 'OWNER' ? fetch('/api/users') : Promise.resolve(null);
+
+        const [settingsRes, usersRes] = await Promise.all([settingsPromise, usersPromise]);
+
+        if (settingsRes.ok && !ignore) {
+          const data = await settingsRes.json();
+          setFormData({
+            laundryName: data.data?.laundry_name || '',
+            address: data.data?.address || '',
+            phone: data.data?.phone || '',
+          });
+          setKiloanServices(data.data?.kiloan_prices || []);
+          setSatuanServices(data.data?.satuan_prices || []);
+        }
+
+        if (usersRes && usersRes.ok && !ignore) {
+          const uData = await usersRes.json();
+          setUsers(uData.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch settings initial data:', err);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+          setLoadingUsers(false);
+        }
+      }
+    }
+
+    if (currentUserRole !== null) {
+      loadInitialData();
+    }
+
+    return () => {
+      ignore = true;
+    };
+  }, [currentUserRole]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -272,6 +283,9 @@ export default function SettingsPage() {
       setSuccess('Data karyawan berhasil diperbarui');
       setTimeout(() => setSuccess(''), 3000);
       fetchUsers();
+      if (editUser?.id === currentUserId) {
+        refreshUser();
+      }
     } catch {
       setEditUserError('Terjadi kesalahan koneksi');
     } finally {

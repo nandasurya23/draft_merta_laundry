@@ -1,36 +1,21 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X, LogOut, Home, Receipt, Users, BarChart3, Settings, Plus, Sparkles } from 'lucide-react';
+import { UserProvider, useUser } from './UserContext';
 
-export default function DashboardLayout({
+function DashboardLayoutContent({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [user, setUser] = useState<{ id: string; name: string; role: 'OWNER' | 'KARYAWAN' } | null>(null);
+  const { user } = useUser();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-
-  useEffect(() => {
-    async function fetchCurrentUser() {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-        }
-      } catch (error) {
-        console.error('Failed to fetch user:', error);
-      }
-    }
-
-    fetchCurrentUser();
-  }, []);
 
   async function handleLogout() {
     setShowLogoutModal(false);
@@ -301,3 +286,16 @@ export default function DashboardLayout({
     </div>
   );
 }
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <UserProvider>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </UserProvider>
+  );
+}
+
