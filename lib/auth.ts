@@ -5,6 +5,10 @@ import { cookies } from 'next/headers';
 const SESSION_COOKIE_NAME = 'session';
 const SESSION_EXPIRY = 12 * 60 * 60 * 1000; // 12 hours
 
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+  console.warn('⚠️ CRITICAL SECURITY WARNING: SESSION_SECRET is not set in production! Please configure it in your environment variables.');
+}
+
 const key = new TextEncoder().encode(
   process.env.SESSION_SECRET || 'default-dev-secret-change-in-production'
 );
@@ -12,6 +16,7 @@ const key = new TextEncoder().encode(
 export interface SessionPayload extends JWTPayload {
   userId: string;
   userName: string;
+  role: 'OWNER' | 'KARYAWAN';
 }
 
 export async function hashPin(pin: string): Promise<string> {

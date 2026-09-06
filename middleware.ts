@@ -30,9 +30,16 @@ export async function middleware(request: NextRequest) {
 
   // Verify token
   try {
-    await jwtVerify(token, key);
+    const verified = await jwtVerify(token, key);
+    const payload = verified.payload as { userId?: string; userName?: string; role?: string };
+
+    // Block non-owner from /reports page
+    if (pathname.startsWith('/reports') && payload.role !== 'OWNER') {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+
     return NextResponse.next();
-  } catch (error) {
+  } catch {
     // Invalid token
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

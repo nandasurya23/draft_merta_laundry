@@ -1,37 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { getCurrentSession } from '@/lib/auth';
 
 function getPeriodDateRange(period: string): { startDate: Date; endDate: Date } {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
-  let startDate = new Date(today);
+  let startDate: Date;
 
   switch (period) {
     case 'today':
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
       break;
-    case 'week':
-      startDate = new Date(today);
-      startDate.setDate(today.getDate() - today.getDay());
+    case 'week': {
+      const day = now.getDay();
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day, 0, 0, 0, 0);
       break;
+    }
     case 'month':
-      startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
       break;
     case 'all':
     default:
       startDate = new Date(0);
   }
 
-  return { startDate, endDate: today };
+  return { startDate, endDate: endOfDay };
 }
 
 export async function GET(req: NextRequest) {
   try {
-    const period = (req.nextUrl.searchParams.get('period') || 'all') as
+    const session = await getCurrentSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    let period = (req.nextUrl.searchParams.get('period') || 'all') as
       | 'today'
       | 'week'
       | 'month'
       | 'all';
+
+    // Non-owner employees are strictly restricted to 'today'
+    if (session.role !== 'OWNER') {
+      period = 'today';
+    }
 
     const { startDate, endDate } = getPeriodDateRange(period);
 

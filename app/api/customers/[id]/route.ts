@@ -11,8 +11,9 @@ export async function PATCH(
     const body = await req.json();
     const validation = UpdateCustomerSchema.safeParse(body);
     if (!validation.success) {
+      console.error('Customer update validation error:', validation.error);
       return NextResponse.json(
-        { error: validation.error.issues[0]?.message || 'Invalid input' },
+        { error: 'Data pelanggan tidak valid. Periksa kembali data yang diisi.' },
         { status: 400 }
       );
     }
@@ -57,12 +58,7 @@ export async function PATCH(
 
     const customer = result.rows[0];
 
-    return NextResponse.json({
-      data: {
-        ...customer,
-        custom_items: customer.custom_items ? JSON.parse(customer.custom_items) : null,
-      },
-    });
+    return NextResponse.json({ data: customer });
   } catch (error) {
     console.error('Update customer error:', error);
     return NextResponse.json({ error: 'Terjadi kesalahan' }, { status: 500 });

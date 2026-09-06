@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { getCurrentSession } from '@/lib/auth';
 import { UpdateSettingsSchema } from '@/lib/validation';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const result = await query('SELECT * FROM settings WHERE id = 1');
 
@@ -12,13 +13,7 @@ export async function GET(req: NextRequest) {
 
     const settings = result.rows[0];
 
-    return NextResponse.json({
-      data: {
-        ...settings,
-        kiloan_prices: settings.kiloan_prices ? JSON.parse(settings.kiloan_prices) : [],
-        satuan_prices: settings.satuan_prices ? JSON.parse(settings.satuan_prices) : [],
-      },
-    });
+    return NextResponse.json({ data: settings });
   } catch (error) {
     console.error('Get settings error:', error);
     return NextResponse.json({ error: 'Terjadi kesalahan' }, { status: 500 });
@@ -27,12 +22,25 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const session = await getCurrentSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (session.role !== 'OWNER') {
+      return NextResponse.json(
+        { error: 'Hanya Owner yang memiliki izin untuk mengubah pengaturan laundry.' },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
 
     const validation = UpdateSettingsSchema.safeParse(body);
     if (!validation.success) {
+      console.error('Settings validation error:', validation.error);
       return NextResponse.json(
-        { error: validation.error.issues[0]?.message || 'Invalid input' },
+        { error: 'Data yang dikirim tidak valid. Periksa kembali pengaturan Anda.' },
         { status: 400 }
       );
     }
@@ -64,13 +72,7 @@ export async function PUT(req: NextRequest) {
 
     const settings = result.rows[0];
 
-    return NextResponse.json({
-      data: {
-        ...settings,
-        kiloan_prices: settings.kiloan_prices ? JSON.parse(settings.kiloan_prices) : [],
-        satuan_prices: settings.satuan_prices ? JSON.parse(settings.satuan_prices) : [],
-      },
-    });
+    return NextResponse.json({ data: settings });
   } catch (error) {
     console.error('Update settings error:', error);
     return NextResponse.json({ error: 'Terjadi kesalahan' }, { status: 500 });

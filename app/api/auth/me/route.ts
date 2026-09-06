@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getCurrentSession } from '@/lib/auth';
 import { query } from '@/lib/db';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getCurrentSession();
 
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     // Fetch user details from DB to get current info
     const result = await query(
-      'SELECT id, name, created_at FROM users WHERE id = $1',
+      'SELECT id, name, role, created_at FROM users WHERE id = $1',
       [session.userId]
     );
 
@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
         user: {
           id: user.id,
           name: user.name,
+          role: user.role || 'KARYAWAN',
           createdAt: user.created_at,
         },
       },

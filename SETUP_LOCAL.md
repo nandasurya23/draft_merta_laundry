@@ -37,14 +37,21 @@ docker run --name merta-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgre
 docker exec merta-pg createdb -U postgres merta_laundry
 ```
 
-## Step 3: Update .env.local (if needed)
+## Step 3: Setup Environment Variables (.env.local)
 
-Default `.DATABASE_URL` in `.env.local` should work if using default Postgres:
-```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/merta_laundry
+Copy the example environment file to `.env.local`:
+```bash
+cp .env.example .env.local
 ```
 
-If your PostgreSQL has different credentials, update this file.
+Default `.DATABASE_URL` in `.env.local` should work if using default local Postgres:
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/merta_laundry
+SESSION_SECRET=your-super-secret-session-key-minimum-32-characters
+NODE_ENV=development
+```
+
+If your PostgreSQL has different credentials, update `.env.local` accordingly.
 
 ## Step 4: Run Database Migrations
 

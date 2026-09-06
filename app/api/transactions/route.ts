@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query, getClient } from '@/lib/db';
 import { CreateTransactionSchema } from '@/lib/validation';
 import { getCurrentSession } from '@/lib/auth';
+import crypto from 'crypto';
 
 function generateInvoiceNumber(): string {
-  const timestamp = Date.now().toString().slice(-6);
-  return `TRX-${timestamp}`;
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const randomHex = crypto.randomBytes(3).toString('hex').toUpperCase(); // 6 chars
+  return `TRX-${yy}${mm}${dd}-${randomHex}`; // Length: 17 chars (fits in VARCHAR(20))
 }
 
 export async function GET(req: NextRequest) {
@@ -18,54 +23,48 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(req.nextUrl.searchParams.get('limit') || '50');
     const offset = parseInt(req.nextUrl.searchParams.get('offset') || '0');
 
-    let sql = 'SELECT * FROM transactions WHERE 1=1';
+    let whereSql = ' WHERE 1=1';
     const params: unknown[] = [];
     let paramIndex = 1;
 
     if (search) {
-      sql += ` AND (invoice_number ILIKE $${paramIndex} OR customer_name ILIKE $${paramIndex})`;
+      whereSql += ` AND (invoice_number ILIKE $${paramIndex} OR customer_name ILIKE $${paramIndex})`;
       params.push(`%${search}%`);
       paramIndex++;
     }
     if (paymentStatus) {
-      sql += ` AND payment_status = $${paramIndex}`;
+      whereSql += ` AND payment_status = $${paramIndex}`;
       params.push(paymentStatus);
       paramIndex++;
     }
     if (laundryStatus) {
-      sql += ` AND laundry_status = $${paramIndex}`;
+      whereSql += ` AND laundry_status = $${paramIndex}`;
       params.push(laundryStatus);
       paramIndex++;
     }
     if (startDate) {
-      sql += ` AND date >= $${paramIndex}`;
+      whereSql += ` AND date >= $${paramIndex}`;
       params.push(startDate);
       paramIndex++;
     }
     if (endDate) {
-      sql += ` AND date <= $${paramIndex}`;
+      whereSql += ` AND date <= $${paramIndex}`;
       params.push(endDate);
       paramIndex++;
     }
 
     const countResult = await query(
-      `SELECT COUNT(*) as count FROM transactions WHERE 1=1`,
-      []
+      `SELECT COUNT(*) as count FROM transactions${whereSql}`,
+      [...params]
     );
     const total = parseInt(countResult.rows[0].count);
 
-    sql += ` ORDER BY date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    params.push(limit, offset);
+    const queryParams = [...params, limit, offset];
+    const sql = `SELECT * FROM transactions${whereSql} ORDER BY date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
 
-    const result = await query(sql, params);
+    const result = await query(sql, queryParams);
 
-    const transactions = result.rows.map((t: any) => ({
-      ...t,
-      kilo_detail: t.kilo_detail ? JSON.parse(t.kilo_detail) : null,
-      unit_detail: t.unit_detail ? JSON.parse(t.unit_detail) : null,
-    }));
-
-    return NextResponse.json({ data: transactions, total });
+    return NextResponse.json({ data: result.rows, total });
   } catch (error) {
     console.error('Get transactions error:', error);
     return NextResponse.json({ error: 'Terjadi kesalahan' }, { status: 500 });
@@ -82,8 +81,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validation = CreateTransactionSchema.safeParse(body);
     if (!validation.success) {
+      console.error('Transaction validation error:', validation.error);
       return NextResponse.json(
-        { error: validation.error.issues[0]?.message || 'Invalid input' },
+        { error: 'Data transaksi tidak valid. Periksa kembali data yang diisi.' },
         { status: 400 }
       );
     }
@@ -112,60 +112,67 @@ export async function POST(req: NextRequest) {
     }
 
     if (unitDetail) {
-      grandTotal += unitDetail.items.reduce((sum: number, item: any) => {
+      grandTotal += unitDetail.items.reduce((sum: number, item: { qty: number; unitPrice: number }) => {
         const itemSubtotal = item.qty * item.unitPrice;
         return sum + itemSubtotal;
       }, 0);
-      totalItem += unitDetail.items.reduce((sum: number, item: any) => sum + item.qty, 0);
+      totalItem += unitDetail.items.reduce((sum: number, item: { qty: number }) => sum + item.qty, 0);
     }
 
-    const result = await query(
-      `INSERT INTO transactions (
-        invoice_number, date, customer_id, customer_name, customer_phone,
-        type, kilo_detail, unit_detail, grand_total, total_item,
-        payment_status, laundry_status, created_by_user_id, created_by_name
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-      RETURNING *`,
-      [
-        invoiceNumber,
-        transactionDate,
-        customerId || null,
-        customerName,
-        customerPhone || null,
-        type,
-        kiloDetail ? JSON.stringify(kiloDetail) : null,
-        unitDetail ? JSON.stringify(unitDetail) : null,
-        grandTotal,
-        totalItem,
-        paymentStatus,
-        'DITERIMA',
-        session.userId,
-        session.userName,
-      ]
-    );
+    const client = await getClient();
 
-    const transaction = result.rows[0];
+    try {
+      await client.query('BEGIN');
 
-    if (customerId) {
-      await query(
-        `UPDATE customers SET 
-          total_transactions = total_transactions + 1,
-          total_spent = total_spent + $1
-         WHERE id = $2`,
-        [grandTotal, customerId]
+      const result = await client.query(
+        `INSERT INTO transactions (
+          invoice_number, date, customer_id, customer_name, customer_phone,
+          type, kilo_detail, unit_detail, grand_total, total_item,
+          payment_status, laundry_status, created_by_user_id, created_by_name
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        RETURNING *`,
+        [
+          invoiceNumber,
+          transactionDate,
+          customerId || null,
+          customerName,
+          customerPhone || null,
+          type,
+          kiloDetail ? JSON.stringify(kiloDetail) : null,
+          unitDetail ? JSON.stringify(unitDetail) : null,
+          grandTotal,
+          totalItem,
+          paymentStatus,
+          'DITERIMA',
+          session.userId,
+          session.userName,
+        ]
       );
-    }
 
-    return NextResponse.json(
-      {
-        data: {
-          ...transaction,
-          kilo_detail: transaction.kilo_detail ? JSON.parse(transaction.kilo_detail) : null,
-          unit_detail: transaction.unit_detail ? JSON.parse(transaction.unit_detail) : null,
-        },
-      },
-      { status: 201 }
-    );
+      const transaction = result.rows[0];
+
+      if (customerId) {
+        await client.query(
+          `UPDATE customers SET
+            total_transactions = total_transactions + 1,
+            total_spent = total_spent + $1
+           WHERE id = $2`,
+          [grandTotal, customerId]
+        );
+      }
+
+      await client.query('COMMIT');
+
+      return NextResponse.json(
+        { data: transaction },
+        { status: 201 }
+      );
+    } catch (dbError) {
+      await client.query('ROLLBACK');
+      throw dbError;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('Create transaction error:', error);
     return NextResponse.json({ error: 'Terjadi kesalahan' }, { status: 500 });

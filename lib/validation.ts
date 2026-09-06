@@ -14,7 +14,7 @@ export const CreateCustomerSchema = z.object({
     .array(
       z.object({
         name: z.string().min(1),
-        qty: z.number().int().min(0),
+        price: z.number().int().min(0),
       })
     )
     .optional()
@@ -40,12 +40,12 @@ export const UpdateSettingsSchema = z.object({
   satuanPrices: z
     .array(
       z.object({
-        id: z.string().optional(),
         name: z.string().min(1),
-        price: z.number().int().min(0),
+        price: z.number().int().min(1),
       })
     )
-    .optional(),
+    .optional()
+    .nullable(),
 });
 
 // Transactions Schema
@@ -87,6 +87,17 @@ export const UpdateTransactionSchema = z.object({
   laundryStatus: z.enum(['DITERIMA', 'DIPROSES', 'SELESAI', 'DIAMBIL']).optional(),
 });
 
+// User Schemas
+export const CreateUserSchema = z.object({
+  name: z.string().trim().min(2, 'Nama minimal 2 karakter').max(100, 'Nama maksimal 100 karakter'),
+  pin: z.string().trim().regex(/^\d{4}$/, 'PIN harus berupa 4 digit angka'),
+});
+
+export const UpdateUserSchema = z.object({
+  name: z.string().trim().min(2, 'Nama minimal 2 karakter').max(100, 'Nama maksimal 100 karakter').optional(),
+  pin: z.string().trim().regex(/^\d{4}$/, 'PIN harus berupa 4 digit angka').optional(),
+});
+
 // Types
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type CreateCustomerInput = z.infer<typeof CreateCustomerSchema>;
@@ -94,3 +105,5 @@ export type UpdateCustomerInput = z.infer<typeof UpdateCustomerSchema>;
 export type UpdateSettingsInput = z.infer<typeof UpdateSettingsSchema>;
 export type CreateTransactionInput = z.infer<typeof CreateTransactionSchema>;
 export type UpdateTransactionInput = z.infer<typeof UpdateTransactionSchema>;
+export type CreateUserInput = z.infer<typeof CreateUserSchema>;
+export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;

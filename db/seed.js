@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 require('dotenv').config({ path: '.env.local' });
@@ -25,10 +26,10 @@ async function seed() {
     // 1. Insert users
     console.log('📝 Seeding users...');
     await client.query(`
-      INSERT INTO users (name, pin_hash) VALUES
-        ($1, $2),
-        ($3, $4),
-        ($5, $6)
+      INSERT INTO users (name, pin_hash, role) VALUES
+        ($1, $2, 'OWNER'),
+        ($3, $4, 'KARYAWAN'),
+        ($5, $6, 'KARYAWAN')
     `, [
       'Owner', ownerPinHash,
       'Pegawai A', pegawaiAPinHash,

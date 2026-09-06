@@ -1,41 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { getCurrentSession } from '@/lib/auth';
 
 function getPeriodDateRange(period: string): { startDate: Date; endDate: Date } {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
-  let startDate = new Date(today);
+  let startDate: Date;
 
   switch (period) {
     case 'today':
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
       break;
-    case 'week':
-      startDate = new Date(today);
-      startDate.setDate(today.getDate() - today.getDay());
+    case 'week': {
+      const day = now.getDay();
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day, 0, 0, 0, 0);
       break;
+    }
     case 'month':
-      startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
       break;
     case 'all':
     default:
       startDate = new Date(0);
   }
 
-  return { startDate, endDate: today };
+  return { startDate, endDate: endOfDay };
 }
 
 function escapeCSV(value: string | number | null): string {
-  if (value === null) return '';
-  const str = String(value);
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+  if (value === null || value === undefined) return '';
+  let str = String(value);
+
+  // Neutralize CSV Formula Injection (CWE-1236)
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
+
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
 }
 
+interface ExportTransactionRow {
+  invoice_number: string;
+  date: string | Date;
+  customer_name: string;
+  type: string;
+  total_item: number;
+  grand_total: number;
+  payment_status: string;
+  laundry_status: string;
+}
+
 export async function GET(req: NextRequest) {
   try {
+    const session = await getCurrentSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (session.role !== 'OWNER') {
+      return NextResponse.json(
+        { error: 'Hanya Owner yang memiliki izin untuk mengekspor laporan.' },
+        { status: 403 }
+      );
+    }
+
     const period = (req.nextUrl.searchParams.get('period') || 'all') as
       | 'today'
       | 'week'
@@ -44,7 +76,7 @@ export async function GET(req: NextRequest) {
 
     const { startDate, endDate } = getPeriodDateRange(period);
 
-    const result = await query(
+    const result = await query<ExportTransactionRow>(
       `SELECT 
         invoice_number, date, customer_name, type, total_item,
         grand_total, payment_status, laundry_status
@@ -67,7 +99,7 @@ export async function GET(req: NextRequest) {
       'Status Laundry',
     ];
 
-    const rows = transactions.map((t: any) => [
+    const rows = transactions.map((t: ExportTransactionRow) => [
       escapeCSV(t.invoice_number),
       escapeCSV(new Date(t.date).toLocaleDateString('id-ID')),
       escapeCSV(t.customer_name),
